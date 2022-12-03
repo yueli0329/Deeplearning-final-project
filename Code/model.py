@@ -1,5 +1,4 @@
 import os
-import re
 import torch
 import warnings
 import cv2
@@ -12,6 +11,9 @@ from torchvision import transforms
 from torchvision import models as M
 from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
+import imgaug
+import imgaug as ia
+from imgaug import augmenters as iaa
 
 import matplotlib as mlp
 import matplotlib.pyplot as plt
@@ -19,9 +21,6 @@ import seaborn as sns
 import random
 import numpy as np
 import pandas as pd
-import datetime
-from time import time
-import gc
 from sklearn.model_selection import train_test_split
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
@@ -44,7 +43,7 @@ DROPOUT = 0.5
 
 ## Image processing
 CHANNELS = 3
-IMAGE_SIZE = 100
+IMAGE_SIZE = 256
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 SAVE_MODEL = True
@@ -75,6 +74,9 @@ class CustomDataset(Dataset):
             # image = Image.fromarray(io.imread(image_path))
             image = self.transform(image)
 
+        image = cv2.resize(image, (IMAGE_SIZE, IMAGE_SIZE))
+
+
         X = torch.FloatTensor(image)
 
         X = torch.reshape(X, (3, IMAGE_SIZE, IMAGE_SIZE))
@@ -82,13 +84,15 @@ class CustomDataset(Dataset):
         y = torch.FloatTensor(label)
 
 
-        sample = {"patch": image,
-                  "label": label,
+        sample = {"patch": X,
+                  "label": y,
                   "patient": patient_id}
 
         return sample
 
 #------------------------------------------------------------------------------------------------------------------
+
+## data augmentation
 
 
 #------------------------------------------------------------------------------------------------------------------
@@ -104,7 +108,9 @@ class CustomDataset(Dataset):
 
 #------------------------------------------------------------------------------------------------------------------
 PATH = os.getcwd()
-for file in os.listdir(PATH):
+os.chdir("..")
+Excel_PATH = os.getcwd()
+for file in os.listdir(Excel_PATH):
     if file[-5:] == '.xlsx':
         FILE_NAME = os.getcwd() + os.path.sep + 'excel.xlsx'
 data = pd.read_excel(FILE_NAME)
@@ -115,6 +121,6 @@ train, test_val = train_test_split(data, test_size=0.3, random_state=1412
 test, val = train_test_split(test_val, test_size=0.5, random_state=1412
                              , stratify=test_val["label"])
 
-df_train = CustomDataset(train)
-df_test = CustomDataset(test)
+df_train = CustomDataset(train,transform = alltransform(key="train"))
+df_test = CustomDataset(test,transform = alltransform(key="train"))
 
