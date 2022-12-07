@@ -93,7 +93,38 @@ class CustomDataset(Dataset):
 #------------------------------------------------------------------------------------------------------------------
 
 ## data augmentation
+# color diversity, color normalization
 
+def alltransform(key="train"):
+
+    seq1 = iaa.Sequential([
+        iaa.Resize(256),
+        iaa.Fliplr(0.5),
+        iaa.Flipud(0.5),
+        iaa.CropAndPad(percent=(0.01, 0.02)),
+        iaa.MultiplyAndAddToBrightness(mul=(0.7, 1.2), add=(-10, 10)),
+        iaa.MultiplyHueAndSaturation(mul_hue=(0.9, 1.1), mul_saturation=(0.8, 1.2)),
+        iaa.pillike.EnhanceContrast(factor=(0.75, 1.25)),
+        iaa.Sometimes(0.5, iaa.AdditiveGaussianNoise(loc=1, scale=(0, 0.05 * 255), per_channel=0.5)),  # probability
+        iaa.Add((-20, 5)),
+        iaa.Multiply((0.8, 1.2), per_channel=0.2),
+        iaa.Affine(scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
+                   translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
+                   rotate=(-10, 10),
+                   shear=(-3, 3))
+    ], random_order=True)
+
+    train_sequence = [seq1.augment_image, transforms.ToPILImage()]
+    test_val_sequence = [iaa.Resize(256).augment_image, transforms.ToPILImage()]
+
+    train_sequence.extend([transforms.ToTensor()
+                              , transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    test_val_sequence.extend([transforms.ToTensor()
+                                 , transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+
+    data_transforms = {'train': transforms.Compose(train_sequence), 'test_val': transforms.Compose(test_val_sequence)}
+
+    return data_transforms[key]
 
 #------------------------------------------------------------------------------------------------------------------
 
