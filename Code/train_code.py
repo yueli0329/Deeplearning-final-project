@@ -197,7 +197,7 @@ def my_transform(key="train", plot=False):
 #####################################  Inital model  ####################################################
 
 
-def initialize_model(model_name):
+def initialize_model(model_name=model_name):
     if model_name == 'Resnet18':
 
         model = torchvision.models.resnet18(pretrained=True)
@@ -479,7 +479,7 @@ def Loss_plot(losses_df,running_losses_df,model_name):
     ax[2].set_ylabel("Weighted x-entropy")
     ax[2].set_title("Loss change over steps")
     ax[2].legend()
-    plt.title()
+    2
     plt.show()
 
 
