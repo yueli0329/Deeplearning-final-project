@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 from PIL import Image
-
+from imgaug import augmenters as iaa
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -41,7 +41,7 @@ from pip._internal import main
 
 #####################################  Setting  #################################################################
 
-NUM_EPOCH = 10
+NUM_EPOCH = 30
 BATCH_SIZE = 32
 NUM_CLASSES = 2
 run_training = True
@@ -53,7 +53,7 @@ MODEL_PATH =  "../input/breastcancermodel/"
 LOSSES_PATH = "../input/breastcancermodel/"
 OUTPUT_PATH = ""
 model_name = 'Resnet18'  #'VGG16'
-imple_CLR = True
+imple_CLR = False
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -175,6 +175,37 @@ class BreastCancerDataset(Dataset):
                 "patient_id": patient_id,
                 "x": x_coord,
                 "y": y_coord}
+
+def alltransform(key="train"):
+
+    seq1 = iaa.Sequential([
+        iaa.Resize(256),
+        iaa.Fliplr(0.5),
+        iaa.Flipud(0.5),
+        iaa.CropAndPad(percent=(0.01, 0.02)),
+        iaa.MultiplyAndAddToBrightness(mul=(0.7, 1.2), add=(-10, 10)),
+        iaa.MultiplyHueAndSaturation(mul_hue=(0.9, 1.1), mul_saturation=(0.8, 1.2)),
+        iaa.pillike.EnhanceContrast(factor=(0.75, 1.25)),
+        iaa.Sometimes(0.5, iaa.AdditiveGaussianNoise(loc=1, scale=(0, 0.05 * 255), per_channel=0.5)),  # probability
+        iaa.Add((-20, 5)),
+        iaa.Multiply((0.8, 1.2), per_channel=0.2),
+        iaa.Affine(scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
+                   translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
+                   rotate=(-10, 10),
+                   shear=(-3, 3))
+    ], random_order=True)
+
+    train_sequence = [seq1.augment_image, transforms.ToPILImage()]
+    test_val_sequence = [iaa.Resize(256).augment_image, transforms.ToPILImage()]
+
+    train_sequence.extend([transforms.ToTensor()
+                              , transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    test_val_sequence.extend([transforms.ToTensor()
+                                 , transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+
+    data_transforms = {'train': transforms.Compose(train_sequence), 'test_val': transforms.Compose(test_val_sequence)}
+
+    return data_transforms[key]
 
 
 def my_transform(key="train", plot=False):
@@ -502,7 +533,7 @@ def trainer(model,criterion,model_name,start_lr,end_lr,num_epoch,imple_CLR):
 
     else:
         print(f'Constant learning rate for trainiing process...........')
-        results = train_loop(model, criterion, optimizer)
+        results = train_loop(model, criterion,optimizer,num_epochs=NUM_EPOCHS)
 
 
 
@@ -541,9 +572,9 @@ if __name__ == '__main__':
 
     train_df,test_df, dev_df = train_test_dev(data)
 
-    train_dataset = BreastCancerDataset(train_df, transform=my_transform(key="train"))
-    dev_dataset = BreastCancerDataset(dev_df, transform=my_transform(key="val"))
-    test_dataset = BreastCancerDataset(test_df, transform=my_transform(key="val"))
+    train_dataset = BreastCancerDataset(train_df, transform=alltransform(key="train"))
+    dev_dataset = BreastCancerDataset(dev_df, transform=alltransform(key="val"))
+    test_dataset = BreastCancerDataset(test_df, transform=alltransform(key="val"))
 
 
     image_datasets = {"train": train_dataset, "dev": dev_dataset, "test": test_dataset}
