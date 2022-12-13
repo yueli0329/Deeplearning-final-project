@@ -1,8 +1,3 @@
-###  experiments
-# resnet epoch 10 有learning——rate 无learning——rate search
-# vgg epoch 10 有learning——rate 无learning——rate search
-
-
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -37,7 +32,7 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 from pip._internal import main
-#main(['install','ipywidgets'])
+main(['install','ipywidgets'])
 
 #####################################  Setting  #################################################################
 
@@ -175,6 +170,7 @@ class BreastCancerDataset(Dataset):
                 "patient_id": patient_id,
                 "x": x_coord,
                 "y": y_coord}
+
 
 def alltransform(key="train"):
 
