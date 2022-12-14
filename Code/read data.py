@@ -35,6 +35,7 @@ np.random.seed(1412)
 
 
 #------------------------------------------------------------------------------------------------------------------
+
 ## read in data
 ORI_PATH = os.getcwd()
 os.chdir("..")
@@ -43,7 +44,6 @@ patients = os.listdir(PATH)
 #print(len(patients))
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-SAVE_MODEL = True
 
 #------------------------------------------------------------------------------------------------------------------
 
@@ -61,7 +61,6 @@ for patient_id in patients:
 
 total_patches = positive_patches + negative_patches
 
-plt.bar(positive_patches,negative_patches)
 
 #------------------------------------------------------------------------------------------------------------------
 
@@ -109,6 +108,14 @@ def image_plot(df):
     plt.show()
 
 #------------------------------------------------------------------------------------------------------------------
+
+def visualize_single_patient(patient_id):
+    singlepatient = data[data["patient_id"] == patient_id]
+    sns.set()
+    plt.scatter(singlepatient["x"],singlepatient["y"],c=singlepatient["label"],cmap="coolwarm",s=10);
+    plt.grid(linewidth=1,color="white")
+
+#------------------------------------------------------------------------------------------------------------------
 ## visulize data
 
 # data = image_path(patients)
@@ -122,9 +129,9 @@ data = pd.read_excel(FILE_NAME)
 # vis positive and negative graphs
 pos_selection = np.random.choice(data[data.label==1].index.values, size=50, replace=False)
 neg_selection = np.random.choice(data[data.label==0].index.values, size=50, replace=False)
-
-image_plot(pos_selection)
-image_plot(neg_selection)
+#
+# image_plot(pos_selection)
+# image_plot(neg_selection)
 #------------------------------------------------------------------------------------------------------------------
 
 # dive into detail
@@ -136,28 +143,41 @@ sns.distplot(data.groupby("patient_id").size(), ax=ax[0], color="Orange", kde=Fa
 ax[0].set_xlabel("Number of patches")
 ax[0].set_ylabel("Frequency")
 ax[0].set_title("How many patches do we have per patient?")
-sns.distplot(data.loc[:, 1]*100, ax=ax[1], color="Tomato", kde=False, bins=30)
+sns.distplot(cancer_perc.loc[:, 1]*100, ax=ax[1], color="Tomato", kde=False, bins=30)
 ax[1].set_title("How much percentage of an image is covered by IDC?")
 ax[1].set_ylabel("Frequency")
 ax[1].set_xlabel("% of patches with IDC")
-sns.countplot(data.target, palette="Set2", ax=ax[2])
+colors = sns.color_palette('pastel')[0:7]
+sns.countplot(data.label, palette="Set2", ax=ax[2])
 ax[2].set_xlabel("no(0) versus yes(1)")
 ax[2].set_title("How many patches show IDC?")
+plt.show()
 
-#------------------------------------------------------------------------------------------------------------------
+# label pie plot
 
-def visualize_single_patient(patient_id):
-    singlepatient = data[data["patient_id"] == patient_id]
-    sns.set()
-    plt.scatter(singlepatient["x"],singlepatient["y"],c=singlepatient["label"],cmap="coolwarm",s=10);
-    plt.grid(linewidth=1,color="white")
-
-
-#------------------------------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------------------------------
+colors = sns.color_palette('pastel')[0:5]
+plt.figure()
+plt.pie(data['label'].value_counts(),labels=data['label'].unique(),colors=colors, autopct='%1.1f%%')
+plt.title("How many patches show IDC?")
+plt.show()
 #------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
+fig, axs = plt.subplots(5,3,figsize=(20, 27))
+patient_ids = data["patient_id"].unique()
+np.random.shuffle(patient_ids)
+
+for n in range(5):
+    for m in range(3):
+        patient_id = patient_ids[m+3*n]
+        singlepatient = data[data["patient_id"] == patient_id]
+        axs[n,m].scatter(singlepatient["x"],singlepatient["y"],c=singlepatient["label"],cmap="coolwarm",s=20)
+        axs[n,m].set_title("patient " + str(patient_id) + " " + str(round(cancer_perc.loc[patient_id,"1"],3)))
+
+plt.show()
+
+#------------------------------------------------------------------------------------------------------------------
+
 
 
 
